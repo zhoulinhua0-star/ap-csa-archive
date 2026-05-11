@@ -12,7 +12,7 @@ public boolean isWordChain() {
 
 // (b)
 public ArrayList<String> createList(String target) {
-    List list = new ArrayList<String>();
+    List<String> list = new ArrayList<String>();
 
     for (int i = 0; i < wordList.size(); i++) {
         if (wordList.get(i).indexOf(target) == 0) {
