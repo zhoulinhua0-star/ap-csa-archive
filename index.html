@@ -3,616 +3,734 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ap-csa-archive</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <title>AP CSA Archive — browser</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <style>
     :root {
-      --bg: #0f1419;
-      --panel: #171d26;
-      --text: #e7edf5;
-      --muted: #94a3b8;
-      --edge: #273141;
+      --bg0: #090b10;
+      --bg1: #0e1219;
+      --card: #131823cc;
+      --stroke: #252d3d;
+      --text: #e8eef7;
+      --muted: #90a0b8;
       --q1: #3b82f6;
-      --q2: #8b5cf6;
-      --q3: #10b981;
+      --q2: #a855f7;
+      --q3: #22c55e;
       --q4: #f59e0b;
-      --danger: #ef4444;
+      --accent: #38bdf8;
+      --err: #fb7185;
+      --radius: 16px;
+      --blur: saturate(140%) blur(12px);
     }
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: var(--bg);
+      min-height: 100vh;
+      font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       color: var(--text);
-      line-height: 1.5;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1e3a5f33, transparent),
+        radial-gradient(900px 500px at 100% 0%, #5b21b622, transparent),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 35%, #07080c);
     }
-    a { color: inherit; }
-    header {
-      padding: 1.5rem clamp(1rem, 3vw, 2.5rem);
-      border-bottom: 1px solid var(--edge);
-      background: linear-gradient(180deg, #121826, var(--bg));
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    header h1 { margin: 0 0 0.35rem; font-size: 1.5rem; }
-    header p { margin: 0; color: var(--muted); max-width: 72ch; font-size: 0.94rem; }
-    .toolbar {
-      display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center;
-      margin-top: 1rem;
+    .animate-in { animation: rise 0.45s ease backwards; }
+
+    header.top {
+      position: sticky; top: 0; z-index: 30;
+      padding: 0.9rem clamp(14px, 3vw, 28px);
+      border-bottom: 1px solid #ffffff10;
+      background: color-mix(in srgb, var(--bg1) 84%, transparent);
+      backdrop-filter: var(--blur);
     }
-    button.btn, summary.btn-like {
-      appearance: none;
-      border: 1px solid var(--edge);
-      background: var(--panel);
-      color: var(--text);
-      padding: 0.45rem 0.75rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      cursor: pointer;
-      font-family: inherit;
-      list-style: none;
+    .top-inner {
+      max-width: 1180px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; gap: 0.75rem 1rem;
+      align-items: center;
     }
-    summary.btn-like::-webkit-details-marker { display: none; }
-    details.settings { position: relative; }
-    details.settings[open] > summary { border-color: #4b5563; }
-    .settings-panel {
-      position: absolute;
-      z-index: 60;
-      top: calc(100% + 6px);
-      left: 0;
-      width: min(360px, 92vw);
-      padding: 0.85rem;
-      border-radius: 12px;
-      border: 1px solid var(--edge);
-      background: #151b24;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+    .brand { flex: 1 1 200px; min-width: 0; }
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.15rem, 2.3vw, 1.35rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
-    .settings-panel p { margin: 0 0 0.5rem; font-size: 0.8125rem; color: var(--muted); }
-    .settings-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
-    .pat-row label { font-size: 0.8125rem; color: var(--muted); display: block; margin-bottom: 0.35rem; }
-    .pat-row input[type="password"] {
-      width: 100%; padding: 0.45rem 0.5rem;
-      border-radius: 8px; border: 1px solid var(--edge); background: #0f141a; color: var(--text);
-      font-family: ui-monospace, monospace; font-size: 0.8125rem;
-    }
-    .toolbar button:hover { border-color: #4b5563; }
-    #status {
+    .brand p {
+      margin: 0.2rem 0 0;
       font-size: 0.8125rem;
       color: var(--muted);
-      margin-left: auto;
-      text-align: right;
-      max-width: 260px;
+      max-width: 52ch;
     }
-    #status.live { color: #86efac; }
-    #status.offline { color: #fde68a; }
-    main {
-      padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 4rem;
-      max-width: 1200px;
-      margin: 0 auto;
+    .ctrl {
+      display: flex; flex-wrap: wrap; gap: 0.45rem;
+      align-items: center;
+      justify-content: flex-end;
     }
-    .grid { display: grid; gap: 1.5rem; }
-    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
-    section.block {
-      background: var(--panel);
-      border: 1px solid var(--edge);
-      border-radius: 14px;
-      overflow: hidden;
+    button, input[type="search"], summary.hdr-btn {
+      font: inherit;
     }
-    section.block h2 {
-      margin: 0;
-      padding: 1rem 1.1rem;
-      font-size: 1.05rem;
-      border-bottom: 1px solid var(--edge);
-      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-    }
-    section.block.q1 h2 { border-left: 4px solid var(--q1); }
-    section.block.q2 h2 { border-left: 4px solid var(--q2); }
-    section.block.q3 h2 { border-left: 4px solid var(--q3); }
-    section.block.q4 h2 { border-left: 4px solid var(--q4); }
-    section.block .subtitle { color: var(--muted); font-weight: 400; font-size: 0.875rem; margin-left: 0.25rem; }
-    ul.problems { list-style: none; margin: 0; padding: 0; }
-    li.problem {
-      padding: 0.85rem 1.1rem;
-      border-top: 1px solid var(--edge);
-    }
-    li.problem:first-of-type { border-top: none; }
-    .problem-title {
-      font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem;
-      cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
-    }
-    .problem-title:hover { color: #cbd5e1; }
-    .hint { font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-left: 0.35rem; text-decoration: none; }
-    .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .actions button {
-      border: 1px solid var(--edge);
-      background: #1e2530;
+    .btn {
+      border: 1px solid var(--stroke);
+      background: #1a2230cc;
       color: var(--text);
-      padding: 0.35rem 0.65rem;
-      border-radius: 6px;
+      padding: 0.4rem 0.72rem;
+      border-radius: 10px;
+      cursor: pointer;
       font-size: 0.8125rem;
-      cursor: pointer;
-      font-family: inherit;
+      transition: border-color .15s, background .15s, transform .1s;
     }
-    .actions button.primary { border-color: #334155; background: #243044; }
-    .actions button:hover { border-color: #555f72; }
-    #overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.65);
-      z-index: 40;
+    .btn:hover { border-color: #46566f; background: #1f2838; }
+    .btn:active { transform: scale(0.98); }
+    .btn-accent {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--stroke));
+      background: color-mix(in srgb, var(--accent) 16%, #1a2230cc);
+      color: #e0f2fe;
     }
-    #overlay.open { display: block; }
-    .drawer-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 1rem 1rem 0.75rem;
-      border-bottom: 1px solid var(--edge);
-      flex-shrink: 0;
-    }
-    #drawer {
-      position: fixed;
-      top: 0; right: 0;
-      width: min(680px, 100vw);
-      height: 100vh;
-      background: #0b0f14;
-      border-left: 1px solid var(--edge);
-      z-index: 50;
-      transform: translateX(100%);
-      transition: transform 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      box-shadow: -8px 0 24px rgba(0,0,0,0.35);
-    }
-    #drawer.open { transform: translateX(0); }
-    #drawer-title { font-size: 0.94rem; font-weight: 600; word-break: break-all; }
-    #drawer-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
-    .drawer-tools {
-      display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.55rem;
-    }
-    .drawer-tools button {
-      border: 1px solid var(--edge);
-      background: #141a22;
-      color: #cbd5e1;
-      padding: 0.3rem 0.55rem;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      font-family: inherit;
-    }
-    .drawer-tools button:hover { border-color: #555f72; }
-    #drawer-close {
-      border: 1px solid var(--edge);
-      background: var(--panel);
+    input[type="search"] {
+      width: min(200px, 46vw);
+      padding: 0.4rem 0.65rem;
+      border-radius: 10px;
+      border: 1px solid var(--stroke);
+      background: #0c1018;
       color: var(--text);
-      border-radius: 8px;
-      padding: 0.35rem 0.65rem;
-      cursor: pointer;
-      font-family: inherit;
+      font-size: 0.8125rem;
     }
-    #drawer-body {
+    input[type="search"]::placeholder { color: #65708d; }
+
+    details.personal {
+      position: relative;
+    }
+    summary.hdr-btn {
+      list-style: none;
+      cursor: pointer;
+      border: 1px solid var(--stroke);
+      padding: 0.4rem 0.72rem;
+      border-radius: 10px;
+      background: #1a2230cc;
+      color: var(--muted);
+      font-size: 0.8125rem;
+    }
+    summary.hdr-btn::-webkit-details-marker { display: none; }
+    details.personal[open] summary.hdr-btn {
+      border-color: #46566f;
+      color: var(--text);
+    }
+    .personal-panel {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      width: min(340px, 92vw);
+      padding: 0.85rem;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: #151b26f2;
+      box-shadow: 0 20px 50px #00000055;
+      z-index: 50;
+      font-size: 0.8rem;
+    }
+    .personal-panel p { margin: 0 0 0.5rem; color: var(--muted); line-height: 1.45; }
+    .personal-panel label { display: block; color: var(--muted); margin: 0.5rem 0 0.2rem; }
+    .personal-panel input[type="password"] {
+      width: 100%; padding: 0.42rem;
+      border-radius: 8px;
+      border: 1px solid var(--stroke);
+      background: #0c1018;
+      color: var(--text);
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+    }
+    .row-btns { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
+
+    #status {
+      flex-basis: 100%;
+      text-align: right;
+      font-size: 0.72rem;
+      color: var(--muted);
+      max-width: 100%;
+    }
+    #status.ok { color: #86efac; }
+    #status.warn { color: #fcd34d; }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: clamp(14px, 2.5vw, 28px);
+      padding-bottom: 4rem;
+    }
+    .grid {
+      display: grid;
+      gap: clamp(14px, 2vw, 22px);
+    }
+    @media (min-width: 840px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    section.unit {
+      border-radius: var(--radius);
+      border: 1px solid #ffffff12;
+      background: var(--card);
+      backdrop-filter: var(--blur);
+      overflow: hidden;
+      animation: rise 0.5s ease backwards;
+    }
+    section.unit:nth-child(1) { animation-delay: 0.04s; }
+    section.unit:nth-child(2) { animation-delay: 0.1s; }
+    section.unit:nth-child(3) { animation-delay: 0.16s; }
+    section.unit:nth-child(4) { animation-delay: 0.22s; }
+
+    section.unit[data-q="q1"] .unit-strip { background: linear-gradient(90deg, var(--q1), transparent); }
+    section.unit[data-q="q2"] .unit-strip { background: linear-gradient(90deg, var(--q2), transparent); }
+    section.unit[data-q="q3"] .unit-strip { background: linear-gradient(90deg, var(--q3), transparent); }
+    section.unit[data-q="q4"] .unit-strip { background: linear-gradient(90deg, var(--q4), transparent); }
+
+    .unit-strip { height: 4px; width: 100%; opacity: 0.9; }
+    .unit-head {
+      padding: 0.95rem 1.05rem 0.85rem;
+      border-bottom: 1px solid #ffffff10;
+      display: flex; flex-wrap: wrap; gap: 0.35rem 0.65rem;
+      align-items: baseline;
+    }
+    .unit-head .t { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.02em; }
+    .unit-head .s { font-size: 0.8125rem; color: var(--muted); font-weight: 500; }
+
+    ul.items { list-style: none; margin: 0; padding: 0; }
+    li.item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.55rem;
+      align-items: center;
+      padding: 0.72rem 1.05rem;
+      border-top: 1px solid #ffffff08;
+    }
+    li.item.hidden { display: none; }
+    li.item:active { background: #ffffff06; }
+
+    .slug {
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: underline dotted;
+      text-underline-offset: 3px;
+      color: #dbe7f8;
+    }
+    .slug:hover { color: #fff; }
+    .mini { font-size: 0.72rem; color: #738299; margin-left: 0.35rem; font-weight: 400; }
+
+    .pill-wrap { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: flex-end; }
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      padding: 0.25rem 0.62rem;
+      font-size: 0.73rem;
+      cursor: pointer;
+      background: #1a2230aa;
+      color: #cdd8ea;
+      transition: background .15s, border-color .15s;
+    }
+    .pill:hover { border-color: #557099; background: #222b3f; }
+
+    /* Viewer */
+    #backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: #050508aa;
+      backdrop-filter: blur(5px);
+    }
+    #backdrop.on { display: block; }
+
+    #viewer {
+      position: fixed;
+      z-index: 90;
+      top: 50%;
+      left: 50%;
+      translate: -50% -50%;
+      width: min(880px, 94vw);
+      height: min(82vh, 900px);
+      border-radius: 18px;
+      border: 1px solid #ffffff18;
+      background: linear-gradient(160deg, #141a26f5, #0b0e14fa);
+      box-shadow: 0 24px 80px #000a;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      animation: rise 0.28s ease;
+    }
+    #viewer.on { display: flex; }
+
+    #viewer-head {
+      padding: 0.72rem 0.95rem;
+      border-bottom: 1px solid #ffffff12;
+      display: flex; align-items: flex-start;
+      gap: 0.6rem;
+      flex-shrink: 0;
+      background: #0d1118cc;
+    }
+    #viewer-path {
+      flex: 1;
+      word-break: break-all;
+      font-size: 0.78rem;
+      font-family: ui-monospace, monospace;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    #viewer-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #738299; margin-bottom: 0.25rem; }
+    #viewer-tools { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    #viewer-close {
+      flex-shrink: 0;
+      border: 1px solid var(--stroke);
+      border-radius: 10px;
+      padding: 0.25rem 0.55rem;
+      background: #1a2230;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    #viewer-body {
       flex: 1;
       overflow: auto;
-      padding: 1rem 1.1rem 2rem;
-      font-size: 0.9375rem;
+      padding: 1rem 1.05rem 1.4rem;
+      font-size: 0.895rem;
+      line-height: 1.52;
+      color: #dfe7f4;
     }
-    #drawer-body pre { background: #11161d; padding: 1rem; border-radius: 8px; overflow: auto; border: 1px solid var(--edge); }
-    #drawer-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; font-size: 0.84em; }
-    #drawer-body p code, #drawer-body li code { background: #11161d; padding: 0.1em 0.35em; border-radius: 4px; }
-    footer.page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem 3rem;
-      font-size: 0.8125rem;
+    #viewer-body pre {
+      overflow: auto;
+      padding: 0.95rem;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: #080a0f99;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    #viewer-body p code,
+    #viewer-body li code { background: #0c121c; padding: 0.12em 0.35em; border-radius: 5px; font-size: 0.84em; }
+    footer.foot {
+      max-width: 1180px; margin: 0 auto;
+      padding: 0 28px 2.5rem;
+      font-size: 0.75rem;
       color: var(--muted);
+      line-height: 1.5;
     }
-    footer.page code { font-size: 0.92em; }
+    footer.foot code { font-size: 0.92em; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>AP CSA Archive</h1>
-    <p>
-      In-page previews load file text via the <strong>GitHub Contents API</strong> (CORS-friendly) with a <strong>jsDelivr</strong> fallback.
-      Nothing opens GitHub unless you choose it. Optional token in <em>Settings</em> raises API rate limits for personal use.
-    </p>
-    <div class="toolbar">
-      <button type="button" class="btn" id="btn-refresh" title="Re-fetch repo tree">Refresh list</button>
-      <button type="button" class="btn" id="btn-root-readme" title="Preview repository README.md">Root README</button>
-      <details class="settings">
-        <summary class="btn-like">Settings</summary>
-        <div class="settings-panel">
-          <p>GitHub opens only when you click a button here or in the preview drawer.</p>
-          <div class="settings-actions">
-            <button type="button" class="btn" id="btn-open-repo">Open repo (new tab)</button>
-            <button type="button" class="btn" id="btn-open-root-blob">Root README on GitHub</button>
+
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand animate-in">
+        <h1>AP CSA Archive</h1>
+        <p>Q1–Q4 summaries + in-page previews. List syncs from GitHub (<code id="lbl-branch"></code>). No redirects on load.</p>
+      </div>
+      <div class="ctrl">
+        <input type="search" id="filter-q" placeholder="Filter problems…" autocomplete="off" aria-label="Filter" />
+        <button type="button" class="btn btn-accent" id="btn-sync" title="Re-fetch folders from GitHub">Sync GitHub</button>
+        <button type="button" class="btn" id="btn-root-readme" title="Preview root README">Root README</button>
+        <details class="personal" id="details-personal">
+          <summary class="hdr-btn">Personal</summary>
+          <div class="personal-panel">
+            <p>Open GitHub only when you click below — stays in this tab until then.</p>
+            <div class="row-btns">
+              <button type="button" class="btn" id="btn-gh-repo">Repo (new tab)</button>
+              <button type="button" class="btn" id="btn-gh-root-blob">README on GitHub</button>
+            </div>
+            <label for="pat">Optional token (same browser only)</label>
+            <input type="password" id="pat" autocomplete="off" placeholder="Higher API limits" />
+            <div class="row-btns">
+              <button type="button" class="btn" id="pat-save">Save</button>
+              <button type="button" class="btn" id="pat-clear">Clear</button>
+            </div>
           </div>
-          <div class="pat-row" style="margin-top:0.75rem">
-            <label for="pat-input">Optional GitHub token (repo read). Stored only in this browser (<code>localStorage</code>).</label>
-            <input type="password" id="pat-input" autocomplete="off" placeholder="ghp_… or fine-grained PAT" />
-          </div>
-          <div class="settings-actions">
-            <button type="button" class="btn" id="pat-save">Save token</button>
-            <button type="button" class="btn" id="pat-clear">Clear token</button>
-          </div>
-        </div>
-      </details>
-      <span id="status"></span>
+        </details>
+      </div>
+      <div id="status"></div>
     </div>
   </header>
 
-  <main id="app" class="grid" aria-busy="true"></main>
+  <main id="root" class="grid" aria-busy="true"></main>
 
-  <footer class="page">
-    <p>
-      Edit <code>GITHUB_REPO</code> in <code>index.html</code> for another fork. Serve over <code>http(s)</code> (GitHub Pages or <code>npx serve .</code>).
-      If listing fails, the embedded snapshot still shows cards; previews then use the API/CDN paths for <code>main</code>.
-    </p>
+  <footer class="foot">
+    Works over HTTPS (GitHub Pages or <code>npx serve .</code>). Embedded snapshot lists problems offline; live views need network.
+    Fix repo in script: <code>GITHUB.owner</code>, <code>GITHUB.repo</code>, <code>GITHUB.branch</code>.
   </footer>
 
-  <div id="overlay" aria-hidden="true"></div>
-  <aside id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
-    <div class="drawer-head">
-      <div style="flex:1;min-width:0;">
-        <div id="drawer-title"></div>
-        <div id="drawer-meta"></div>
-        <div class="drawer-tools">
-          <button type="button" id="btn-drawer-gh-file">GitHub · this file</button>
-          <button type="button" id="btn-drawer-copy">Copy github.com link</button>
-        </div>
+  <div id="backdrop"></div>
+  <div id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewer-path">
+    <div id="viewer-head">
+      <div style="flex:1;min-width:0">
+        <div id="viewer-label">File</div>
+        <div id="viewer-path"></div>
       </div>
-      <button type="button" id="drawer-close" aria-label="Close">Esc</button>
+      <div id="viewer-tools">
+        <button type="button" class="btn" id="v-open-blob">GitHub</button>
+        <button type="button" class="btn" id="v-copy-link">Copy link</button>
+      </div>
+      <button type="button" id="viewer-close" aria-label="Close">✕</button>
     </div>
-    <article id="drawer-body"></article>
-  </aside>
+    <div id="viewer-body"></div>
+  </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script>
-    const GITHUB_REPO = {
-      owner: "zhoulinhua0-star",
-      repo: "ap-csa-archive",
-      branch: "main",
+(function () {
+  "use strict";
+
+  var GITHUB = {
+    owner: "zhoulinhua0-star",
+    repo: "ap-csa-archive",
+    branch: "main"
+  };
+
+  var LS_TOKEN = "ap_csa_archive_pat_v2";
+
+  var SNAPSHOT = [{"id":"q1-methods&control-structures","problems":[{"slug":"bird-feeder","dir":"q1-methods&control-structures/bird-feeder"},{"slug":"calendar-leapyear","dir":"q1-methods&control-structures/calendar-leapyear"},{"slug":"fishNum-location","dir":"q1-methods&control-structures/fishNum-location"},{"slug":"free-block-prob","dir":"q1-methods&control-structures/free-block-prob"},{"slug":"hop-simulation","dir":"q1-methods&control-structures/hop-simulation"},{"slug":"roll-die","dir":"q1-methods&control-structures/roll-die"},{"slug":"room-reservation","dir":"q1-methods&control-structures/room-reservation"},{"slug":"score-guessing","dir":"q1-methods&control-structures/score-guessing"},{"slug":"self-divisor","dir":"q1-methods&control-structures/self-divisor"},{"slug":"walk-dog","dir":"q1-methods&control-structures/walk-dog"}]},{"id":"q2-class-design","problems":[{"slug":"CalorieCount","dir":"q2-class-design/CalorieCount"},{"slug":"Scoreboard","dir":"q2-class-design/Scoreboard"},{"slug":"Sign","dir":"q2-class-design/Sign"},{"slug":"SignedText","dir":"q2-class-design/SignedText"},{"slug":"StepTracker","dir":"q2-class-design/StepTracker"},{"slug":"apline-slope","dir":"q2-class-design/apline-slope"}]},{"id":"q3-array-arraylist","problems":[{"slug":"TravelPlan","dir":"q3-array-arraylist/TravelPlan"},{"slug":"WordPair","dir":"q3-array-arraylist/WordPair"},{"slug":"appointment","dir":"q3-array-arraylist/appointment"},{"slug":"average-score","dir":"q3-array-arraylist/average-score"},{"slug":"compare-customer","dir":"q3-array-arraylist/compare-customer"},{"slug":"competitor-prob","dir":"q3-array-arraylist/competitor-prob"},{"slug":"cookie-variety","dir":"q3-array-arraylist/cookie-variety"},{"slug":"cube-toss","dir":"q3-array-arraylist/cube-toss"},{"slug":"heat-wave-data","dir":"q3-array-arraylist/heat-wave-data"},{"slug":"html-delimiters","dir":"q3-array-arraylist/html-delimiters"},{"slug":"student-score","dir":"q3-array-arraylist/student-score"},{"slug":"trail-prob","dir":"q3-array-arraylist/trail-prob"},{"slug":"wordlist","dir":"q3-array-arraylist/wordlist"},{"slug":"words-of-length","dir":"q3-array-arraylist/words-of-length"}]},{"id":"q4-2D-array","problems":[{"slug":"LightBoard","dir":"q4-2D-array/LightBoard"},{"slug":"SeatingChart","dir":"q4-2D-array/SeatingChart"},{"slug":"candy-flavor-box","dir":"q4-2D-array/candy-flavor-box"},{"slug":"grid-Location-prob","dir":"q4-2D-array/grid-Location-prob"},{"slug":"latin","dir":"q4-2D-array/latin"},{"slug":"puzzle","dir":"q4-2D-array/puzzle"}]}];
+
+  var UNIT_LABELS = {
+    "q1-methods&control-structures": { q: "q1", title: "Q1", sub: "Methods & control structures" },
+    "q2-class-design": { q: "q2", title: "Q2", sub: "Class design" },
+    "q3-array-arraylist": { q: "q3", title: "Q3", sub: "Array & ArrayList" },
+    "q4-2D-array": { q: "q4", title: "Q4", sub: "2D array" }
+  };
+
+  var currentBlobPath = "";
+  var lastUnits = [];
+
+  function $(id) { return document.getElementById(id); }
+
+  function encPath(path) {
+    return path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  }
+
+  function blobUrl(path) {
+    return "https://github.com/" + GITHUB.owner + "/" + GITHUB.repo + "/blob/" + GITHUB.branch + "/" + encPath(path);
+  }
+
+  function ghHeaders(media) {
+    var h = {
+      Accept: media || "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    };
+    var t = (localStorage.getItem(LS_TOKEN) || "").trim();
+    if (t) h.Authorization = "Bearer " + t;
+    return h;
+  }
+
+  function decodeB64Utf8(content) {
+    var clean = String(content || "").replace(/\s/g, "");
+    var bin = atob(clean);
+    var u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return new TextDecoder("utf-8").decode(u8);
+  }
+
+  /** File text: GitHub Contents API (Accept raw → JSON/base64), then jsDelivr. Both allow browser CORS. */
+  function fetchRepoText(path) {
+    var encoded = encPath(path);
+    var apiBase = "https://api.github.com/repos/" + GITHUB.owner + "/" + GITHUB.repo +
+      "/contents/" + encoded + "?ref=" + encodeURIComponent(GITHUB.branch);
+    var log = [];
+
+    return fetch(apiBase, { headers: ghHeaders("application/vnd.github.raw") })
+      .then(function (rs) {
+        if (rs.ok) return rs.text();
+        log.push("raw-http-" + rs.status);
+        return fetch(apiBase, { headers: ghHeaders("application/vnd.github+json") })
+          .then(function (jr) {
+            if (!jr.ok) {
+              return jr.text().then(function () {
+                log.push("json-http-" + jr.status);
+                throw new Error("__CDN__");
+              });
+            }
+            return jr.json().then(function (data) {
+              if (Array.isArray(data)) {
+                log.push("json-array");
+                throw new Error("__CDN__");
+              }
+              if (data && data.encoding === "base64" && data.content) {
+                return decodeB64Utf8(data.content);
+              }
+              log.push("json-no-base64");
+              throw new Error("__CDN__");
+            });
+          })
+          .catch(function (inn) {
+            if (inn && inn.message === "__CDN__") throw inn;
+            log.push(String(inn.message || inn));
+            throw new Error("__CDN__");
+          });
+      })
+      .catch(function () {
+        var cdnUrl = "https://cdn.jsdelivr.net/gh/" + GITHUB.owner + "/" + GITHUB.repo + "@" +
+          encodeURIComponent(GITHUB.branch) + "/" + encoded;
+        return fetch(cdnUrl).then(function (cr) {
+          if (!cr.ok) {
+            throw new Error("Load failed · CDN HTTP " + cr.status + " · " + log.join(" · "));
+          }
+          return cr.text();
+        });
+      });
+  }
+
+  function fetchJson(url) {
+    return fetch(url, { headers: ghHeaders("application/vnd.github+json") }).then(function (r) {
+      if (!r.ok) return r.text().then(function (tx) {
+        throw new Error(r.status + " · " + (tx || "").slice(0, 200));
+      });
+      return r.json();
+    });
+  }
+
+  function treeToUnits(entries) {
+    var re = /^q[1-4]-[^/]+\/.+\/(README\.md|code\.md)$/i;
+    var byUnit = new Map();
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      if (e.type !== "blob") continue;
+      var p = e.path;
+      if (!re.test(p)) continue;
+      var parts = p.split("/");
+      if (parts.length !== 3) continue;
+      var uid = parts[0], slug = parts[1], file = parts[2];
+      if (!byUnit.has(uid)) byUnit.set(uid, new Map());
+      var m = byUnit.get(uid);
+      if (!m.has(slug)) m.set(slug, { slug: slug, dir: uid + "/" + slug });
+      var slot = m.get(slug);
+      if (/^readme\.md$/i.test(file)) slot.hasReadme = true;
+      if (/^code\.md$/i.test(file)) slot.hasCode = true;
+    }
+    var ids = Array.from(byUnit.keys()).sort();
+    var out = [];
+    for (var k = 0; k < ids.length; k++) {
+      var u = ids[k];
+      var pmap = byUnit.get(u);
+      var arr = Array.from(pmap.values()).sort(function (a, b) {
+        return a.slug.localeCompare(b.slug);
+      });
+      out.push({ id: u, problems: arr });
+    }
+    return out;
+  }
+
+  function loadUnitsRemote() {
+    var bUrl = "https://api.github.com/repos/" + GITHUB.owner + "/" + GITHUB.repo + "/branches/" + GITHUB.branch;
+    return fetchJson(bUrl).then(function (br) {
+      var sha = br.commit && br.commit.commit && br.commit.commit.tree && br.commit.commit.tree.sha;
+      if (!sha) throw new Error("branch tree missing");
+      return fetchJson(
+        "https://api.github.com/repos/" + GITHUB.owner + "/" + GITHUB.repo +
+        "/git/trees/" + sha + "?recursive=1"
+      );
+    }).then(function (tree) {
+      return treeToUnits(tree.tree || []);
+    });
+  }
+
+  function renderMarkdown(txt) {
+    var html;
+    if (typeof marked !== "undefined") {
+      if (typeof marked.parse === "function") {
+        html = marked.parse(txt, { mangle: false, headerIds: false });
+      } else if (typeof marked === "function") {
+        html = marked(txt);
+      } else {
+        html = "<pre>" + esc(txt) + "</pre>";
+      }
+    } else html = "<pre>" + esc(txt) + "</pre>";
+
+    return typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(html) : html;
+  }
+
+  function esc(s) {
+    return String(s || "").replace(/[&<>"']/g, function (ch) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch];
+    });
+  }
+
+  function setStatus(ok, txt) {
+    var el = $("status");
+    el.textContent = txt;
+    el.className = ok === true ? "ok" : ok === false ? "warn" : "";
+  }
+
+  function openViewer(repoPath, kind) {
+    currentBlobPath = repoPath;
+    $("viewer-path").textContent = repoPath;
+    $("viewer-label").textContent = kind || "Markdown";
+    $("viewer-body").innerHTML = '<p style="color:#738299;margin:0">Loading…</p>';
+    $("backdrop").classList.add("on");
+    $("viewer").classList.add("on");
+
+    fetchRepoText(repoPath)
+      .then(function (text) {
+        $("viewer-body").innerHTML = renderMarkdown(text);
+      })
+      .catch(function (e) {
+        $("viewer-body").innerHTML =
+          '<p style="color:var(--err)">' + esc(e.message) + '</p>' +
+          '<p style="color:#738299;font-size:.85rem;margin-top:.6rem">' +
+          "Tip: confirm the file exists on GitHub branch <code>" + esc(GITHUB.branch) + "</code>. " +
+          "Private repos need a Personal token saved under Personal.</p>";
+      });
+  }
+
+  function closeViewer() {
+    $("backdrop").classList.remove("on");
+    $("viewer").classList.remove("on");
+    currentBlobPath = "";
+  }
+
+  function applyFilter() {
+    var q = (($("filter-q").value || "").trim().toLowerCase());
+    var nodes = document.querySelectorAll("#root li.item");
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var slug = (n.dataset.slug || "").toLowerCase();
+      n.classList.toggle("hidden", q.length > 0 && slug.indexOf(q) < 0);
+    }
+  }
+
+  function buildDom(units) {
+    lastUnits = units || [];
+    var root = $("root");
+    root.innerHTML = "";
+    for (var u = 0; u < units.length; u++) {
+      var unit = units[u];
+      var meta = UNIT_LABELS[unit.id] || { q: "", title: unit.id, sub: "" };
+      var sec = document.createElement("section");
+      sec.className = "unit";
+      sec.dataset.q = meta.q || "";
+      sec.innerHTML =
+        '<div class="unit-strip"></div>' +
+        '<div class="unit-head">' +
+        '<span class="t">' + esc(meta.title) + '</span>' +
+        '<span class="s">— ' + esc(meta.sub) + '</span>' +
+        "</div>" +
+        '<ul class="items"></ul>';
+      var ul = sec.querySelector("ul");
+      for (var p = 0; p < unit.problems.length; p++) {
+        var pr = unit.problems[p];
+        var readme = pr.dir + "/README.md";
+        var code = pr.dir + "/code.md";
+        var li = document.createElement("li");
+        li.className = "item";
+        li.dataset.slug = pr.slug;
+        li.innerHTML =
+          '<div><span class="slug" data-readme="' + esc(readme) + '">' + esc(pr.slug) +
+          '</span><span class="mini">readme</span></div>' +
+          '<div class="pill-wrap">' +
+          '<button type="button" class="pill" data-file="' + esc(readme) + '" data-kind="README">README</button>' +
+          '<button type="button" class="pill" data-file="' + esc(code) + '" data-kind="Code">code</button>' +
+          "</div>";
+        ul.appendChild(li);
+      }
+      root.appendChild(sec);
+    }
+
+    root.onclick = function (ev) {
+      var t = ev.target;
+      if (t.closest && t.closest(".pill")) {
+        var b = t.closest(".pill");
+        openViewer(b.getAttribute("data-file"), b.getAttribute("data-kind"));
+        return;
+      }
+      if (t.classList && t.classList.contains("slug")) {
+        openViewer(t.getAttribute("data-readme"), "README");
+      }
+    };
+  }
+
+  function sync() {
+    $("root").setAttribute("aria-busy", "true");
+    setStatus("", "Syncing GitHub tree…");
+
+    loadUnitsRemote()
+      .then(function (units) {
+        var ok = units.some(function (x) { return x.problems && x.problems.length > 0; });
+        buildDom(ok ? units : SNAPSHOT);
+        setStatus(ok, "Synced from GitHub · " + GITHUB.owner + "/" + GITHUB.repo + " @" + GITHUB.branch);
+      })
+      .catch(function () {
+        buildDom(SNAPSHOT);
+        setStatus(false, "Tree API unavailable — embedded snapshot lists problems. Preview still pulls from CDN/API.");
+      })
+      .finally(function () {
+        $("root").setAttribute("aria-busy", "false");
+        applyFilter();
+      });
+  }
+
+  function initChrome() {
+    $("lbl-branch").textContent = GITHUB.branch;
+
+    $("btn-sync").onclick = function () { sync(); };
+
+    $("filter-q").addEventListener("input", applyFilter);
+
+    $("btn-root-readme").onclick = function () {
+      openViewer("README.md", "Root README");
     };
 
-    const LS_TOKEN_KEY = "ap_csa_archive_github_token";
+    $("btn-gh-repo").onclick = function () {
+      window.open("https://github.com/" + GITHUB.owner + "/" + GITHUB.repo, "_blank", "noopener");
+    };
+    $("btn-gh-root-blob").onclick = function () {
+      window.open(blobUrl("README.md"), "_blank", "noopener");
+    };
 
-    const INITIAL_SNAPSHOT_UNITS = [
-      {"id":"q1-methods&control-structures","problems":[{"slug":"bird-feeder","dir":"q1-methods&control-structures/bird-feeder"},{"slug":"calendar-leapyear","dir":"q1-methods&control-structures/calendar-leapyear"},{"slug":"fishNum-location","dir":"q1-methods&control-structures/fishNum-location"},{"slug":"free-block-prob","dir":"q1-methods&control-structures/free-block-prob"},{"slug":"hop-simulation","dir":"q1-methods&control-structures/hop-simulation"},{"slug":"roll-die","dir":"q1-methods&control-structures/roll-die"},{"slug":"room-reservation","dir":"q1-methods&control-structures/room-reservation"},{"slug":"score-guessing","dir":"q1-methods&control-structures/score-guessing"},{"slug":"self-divisor","dir":"q1-methods&control-structures/self-divisor"},{"slug":"walk-dog","dir":"q1-methods&control-structures/walk-dog"}]},
-      {"id":"q2-class-design","problems":[{"slug":"CalorieCount","dir":"q2-class-design/CalorieCount"},{"slug":"Scoreboard","dir":"q2-class-design/Scoreboard"},{"slug":"Sign","dir":"q2-class-design/Sign"},{"slug":"SignedText","dir":"q2-class-design/SignedText"},{"slug":"StepTracker","dir":"q2-class-design/StepTracker"},{"slug":"apline-slope","dir":"q2-class-design/apline-slope"}]},
-      {"id":"q3-array-arraylist","problems":[{"slug":"TravelPlan","dir":"q3-array-arraylist/TravelPlan"},{"slug":"WordPair","dir":"q3-array-arraylist/WordPair"},{"slug":"appointment","dir":"q3-array-arraylist/appointment"},{"slug":"average-score","dir":"q3-array-arraylist/average-score"},{"slug":"compare-customer","dir":"q3-array-arraylist/compare-customer"},{"slug":"competitor-prob","dir":"q3-array-arraylist/competitor-prob"},{"slug":"cookie-variety","dir":"q3-array-arraylist/cookie-variety"},{"slug":"cube-toss","dir":"q3-array-arraylist/cube-toss"},{"slug":"heat-wave-data","dir":"q3-array-arraylist/heat-wave-data"},{"slug":"html-delimiters","dir":"q3-array-arraylist/html-delimiters"},{"slug":"student-score","dir":"q3-array-arraylist/student-score"},{"slug":"trail-prob","dir":"q3-array-arraylist/trail-prob"},{"slug":"wordlist","dir":"q3-array-arraylist/wordlist"},{"slug":"words-of-length","dir":"q3-array-arraylist/words-of-length"}]},
-      {"id":"q4-2D-array","problems":[{"slug":"LightBoard","dir":"q4-2D-array/LightBoard"},{"slug":"SeatingChart","dir":"q4-2D-array/SeatingChart"},{"slug":"candy-flavor-box","dir":"q4-2D-array/candy-flavor-box"},{"slug":"grid-Location-prob","dir":"q4-2D-array/grid-Location-prob"},{"slug":"latin","dir":"q4-2D-array/latin"},{"slug":"puzzle","dir":"q4-2D-array/puzzle"}]}
-    ];
+    $("pat").value = localStorage.getItem(LS_TOKEN) || "";
+    $("pat-save").onclick = function () {
+      var v = ($("pat").value || "").trim();
+      if (v) localStorage.setItem(LS_TOKEN, v);
+      else localStorage.removeItem(LS_TOKEN);
+      sync();
+    };
+    $("pat-clear").onclick = function () {
+      localStorage.removeItem(LS_TOKEN);
+      $("pat").value = "";
+      sync();
+    };
 
-    const UNIT_META = new Map([
-      ["q1-methods&control-structures", { key: "q1", title: "Q1", subtitle: "Methods & control structures" }],
-      ["q2-class-design", { key: "q2", title: "Q2", subtitle: "Class design" }],
-      ["q3-array-arraylist", { key: "q3", title: "Q3", subtitle: "Array & ArrayList" }],
-      ["q4-2D-array", { key: "q4", title: "Q4", subtitle: "2D array" }],
-    ]);
+    $("viewer-close").onclick = closeViewer;
+    $("backdrop").onclick = closeViewer;
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") closeViewer();
+    });
 
-    const app = document.getElementById("app");
-    const statusEl = document.getElementById("status");
-    const overlay = document.getElementById("overlay");
-    const drawer = document.getElementById("drawer");
-    const drawerTitle = document.getElementById("drawer-title");
-    const drawerMeta = document.getElementById("drawer-meta");
-    const drawerBody = document.getElementById("drawer-body");
-
-    /** Last opened blob path for drawer actions */
-    let lastRepoPathForDrawer = "";
-
-    function encodeSegments(path) {
-      return path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
-    }
-
-    function githubBlobUrl(repoPath) {
-      const tail = encodeSegments(repoPath);
-      const { owner, repo, branch } = GITHUB_REPO;
-      return `https://github.com/${owner}/${repo}/blob/${branch}/${tail}`;
-    }
-
-    function apiHeaders(mediaType = "application/vnd.github+json") {
-      const headers = {
-        Accept: mediaType,
-        "X-GitHub-Api-Version": "2022-11-28",
-      };
-      const token = (localStorage.getItem(LS_TOKEN_KEY) || "").trim();
-      if (token) headers.Authorization = `Bearer ${token}`;
-      return headers;
-    }
-
-    function decodeBase64Utf8(b64) {
-      const clean = b64.replace(/\s/g, "");
-      const bin = atob(clean);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return new TextDecoder("utf-8").decode(bytes);
-    }
-
-    async function fetchViaJsDelivr(repoPath) {
-      const { owner, repo, branch } = GITHUB_REPO;
-      const tail = encodeSegments(repoPath);
-      const url = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${encodeURIComponent(branch)}/${tail}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`jsDelivr HTTP ${res.status}`);
-      return await res.text();
-    }
-
-    /** Load file bytes as UTF-8 text: GitHub API (raw/json) → jsDelivr. Avoids raw.githubusercontent.com CORS. */
-    async function fetchRepoFileText(repoPath) {
-      const { owner, repo, branch } = GITHUB_REPO;
-      const encodedPath = encodeSegments(repoPath);
-      const url =
-        `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}` +
-        `?ref=${encodeURIComponent(branch)}`;
-
-      let apiErr = "";
-      try {
-        const rawRes = await fetch(url, { headers: apiHeaders("application/vnd.github.raw") });
-        if (rawRes.ok) return await rawRes.text();
-        apiErr = `${rawRes.status} ${(await rawRes.text()).slice(0, 180)}`;
-
-        const jsonRes = await fetch(url, { headers: apiHeaders("application/vnd.github+json") });
-        if (jsonRes.ok) {
-          const data = await jsonRes.json();
-          if (Array.isArray(data)) throw new Error("Path is a directory");
-          if (data.type === "file" && data.encoding === "base64" && data.content) {
-            return decodeBase64Utf8(data.content);
-          }
-          throw new Error("Unexpected Contents API payload");
-        }
-        apiErr = `${jsonRes.status} ${(await jsonRes.text()).slice(0, 180)}`;
-      } catch (e) {
-        if (e.message && String(e.message).includes("Unexpected")) throw e;
-        apiErr = String(e.message || e || apiErr);
-      }
-
-      try {
-        return await fetchViaJsDelivr(repoPath);
-      } catch (_) {
-        throw new Error(`Could not fetch ${repoPath}. API: ${apiErr}`);
-      }
-    }
-
-    /** Build unit list from recursive git tree blobs. */
-    function treePathsToUnits(treeEntries) {
-      const wanted = /^q[1-4]-[^/]+\/.+\/(README\.md|code\.md)$/i;
-      const byUnit = new Map();
-      for (const entry of treeEntries) {
-        if (entry.type !== "blob") continue;
-        const p = entry.path;
-        if (!wanted.test(p)) continue;
-        const parts = p.split("/");
-        if (parts.length !== 3) continue;
-        const [unitId, slug, file] = parts;
-        let unitMap = byUnit.get(unitId);
-        if (!unitMap) {
-          unitMap = new Map();
-          byUnit.set(unitId, unitMap);
-        }
-        let slot = unitMap.get(slug);
-        if (!slot) {
-          slot = { slug, dir: `${unitId}/${slug}`, hasReadme: false, hasCode: false };
-          unitMap.set(slug, slot);
-        }
-        if (file.toLowerCase() === "readme.md") slot.hasReadme = true;
-        if (file.toLowerCase() === "code.md") slot.hasCode = true;
-      }
-      const order = Array.from(byUnit.keys()).sort((a, b) => a.localeCompare(b));
-      const out = [];
-      for (const uid of order) {
-        const m = byUnit.get(uid);
-        const problems = Array.from(m.values()).sort((a, b) => a.slug.localeCompare(b.slug));
-        out.push({ id: uid, problems });
-      }
-      return out;
-    }
-
-    async function fetchJson(url) {
-      const res = await fetch(url, { headers: apiHeaders("application/vnd.github+json") });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(`${res.status} ${url} — ${t.slice(0, 240)}`);
-      }
-      const remaining = res.headers.get("x-ratelimit-remaining");
-      if (remaining !== null && Number(remaining) < 15) {
-        console.warn(`GitHub API rate-limit remaining: ${remaining}`);
-      }
-      return res.json();
-    }
-
-    async function loadUnitsLive() {
-      const { owner, repo, branch } = GITHUB_REPO;
-      const bUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${branch}`;
-      const br = await fetchJson(bUrl);
-      const treeSha =
-        br.commit && br.commit.commit && br.commit.commit.tree && br.commit.commit.tree.sha;
-      if (!treeSha) throw new Error("Unexpected branch payload (no tree.sha).");
-      const tree = await fetchJson(
-        `https://api.github.com/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`
-      );
-      return treePathsToUnits(tree.tree || []);
-    }
-
-    function el(tag, props, kids) {
-      const n = document.createElement(tag);
-      if (props) Object.assign(n, props);
-      if (kids) kids.forEach((k) => n.append(k));
-      return n;
-    }
-
-    function renderMarkdown(text) {
-      let mdHtml;
-      if (typeof marked !== "undefined") {
-        if (typeof marked.parse === "function") {
-          mdHtml = marked.parse(text, { mangle: false, headerIds: false });
-        } else if (typeof marked === "function") {
-          mdHtml = marked(text);
-        } else mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
-      } else mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
-      return typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(mdHtml) : mdHtml;
-    }
-
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, (ch) =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch]));
-    }
-
-    async function openPreview(repoPath, label) {
-      lastRepoPathForDrawer = repoPath;
-      drawerTitle.textContent = repoPath;
-      drawerMeta.textContent = `${label} · loading via GitHub API / CDN…`;
-      drawerBody.innerHTML = "<p style=\"color:var(--muted)\">Loading…</p>";
-      overlay.classList.add("open");
-      drawer.classList.add("open");
-
-      try {
-        const text = await fetchRepoFileText(repoPath);
-        drawerMeta.textContent = `${label} · rendered locally`;
-        drawerBody.innerHTML = renderMarkdown(text);
-      } catch (e) {
-        drawerMeta.textContent = `Error · ${label}`;
-        const danger = getComputedStyle(document.documentElement).getPropertyValue("--danger").trim()
-          || "#ef4444";
-        drawerBody.innerHTML =
-          `<p style="color:${danger}">
-            Could not load <code>${escapeHtml(repoPath)}</code>:
-            ${escapeHtml(String(e.message))}.
-           </p>
-           <div class="drawer-tools">
-             <button type="button" id="retry-preview">Retry</button>
-           </div>
-           <p style="margin-top:0.75rem;font-size:0.8125rem;color:var(--muted)">
-             If this is a private repo, add a read token under <strong>Settings</strong>.
-           </p>`;
-        drawerBody.querySelector("#retry-preview").onclick = () => openPreview(repoPath, label);
-      }
-    }
-
-    function renderUnits(units) {
-      app.innerHTML = "";
-      units.forEach((unit) => {
-        const meta = UNIT_META.get(unit.id) || { key: "", title: unit.id, subtitle: "" };
-        const sec = document.createElement("section");
-        sec.className = `block ${meta.key}`.trim();
-        sec.appendChild(el("h2", null, [
-          document.createTextNode(meta.title || unit.id),
-          el("span", { className: "subtitle", textContent: "— " + (meta.subtitle || "") }),
-        ]));
-        const ul = document.createElement("ul");
-        ul.className = "problems";
-        unit.problems.forEach((p) => {
-          const readmePath = `${p.dir}/README.md`;
-          const codePath = `${p.dir}/code.md`;
-          const li = document.createElement("li");
-          li.className = "problem";
-          const title = el("div", { className: "problem-title" });
-          title.appendChild(document.createTextNode(p.slug));
-          title.appendChild(el("span", { className: "hint", textContent: "(click → README)" }));
-          title.title = "Preview README.md";
-          title.onclick = () => openPreview(readmePath, "README.md");
-          const actions = document.createElement("div");
-          actions.className = "actions";
-          const rBtn = document.createElement("button");
-          rBtn.type = "button";
-          rBtn.className = "primary";
-          rBtn.textContent = "README";
-          rBtn.onclick = () => openPreview(readmePath, "README.md");
-          const cBtn = document.createElement("button");
-          cBtn.type = "button";
-          cBtn.textContent = "Code";
-          cBtn.onclick = () => openPreview(codePath, "code.md");
-          actions.append(rBtn, cBtn);
-          li.append(title, actions);
-          ul.appendChild(li);
+    $("v-open-blob").onclick = function () {
+      if (currentBlobPath) window.open(blobUrl(currentBlobPath), "_blank", "noopener");
+    };
+    $("v-copy-link").onclick = function () {
+      if (!currentBlobPath) return;
+      var u = blobUrl(currentBlobPath);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(u).then(function () {
+          $("viewer-label").textContent = "Copied github link ✓";
+          setTimeout(function () { $("viewer-label").textContent = "File"; }, 1600);
         });
-        sec.appendChild(ul);
-        app.appendChild(sec);
-      });
-    }
-
-    function setStatus(mode, msg) {
-      statusEl.textContent = msg;
-      statusEl.className = mode === "live" ? "live" : mode === "offline" ? "offline" : "";
-    }
-
-    function closeDrawer() {
-      overlay.classList.remove("open");
-      drawer.classList.remove("open");
-    }
-
-    function mergeProblems(liveUnits, fallbackUnits) {
-      if (!liveUnits || liveUnits.length === 0) return fallbackUnits || [];
-      return liveUnits;
-    }
-
-    async function bootstrap() {
-      app.setAttribute("aria-busy", "true");
-      setStatus("", "Fetching…");
-
-      try {
-        const units = mergeProblems(await loadUnitsLive(), INITIAL_SNAPSHOT_UNITS);
-        const hasProblems = units.some((u) => u.problems && u.problems.length > 0);
-        renderUnits(hasProblems ? units : INITIAL_SNAPSHOT_UNITS);
-        setStatus("live", `Listing · ${GITHUB_REPO.owner}/${GITHUB_REPO.repo} (${GITHUB_REPO.branch})`);
-      } catch (e) {
-        console.warn(e);
-        renderUnits(INITIAL_SNAPSHOT_UNITS);
-        setStatus("offline", "Snapshot listing · GitHub tree: " + (e && e.message ? e.message : "unreachable"));
-      } finally {
-        app.setAttribute("aria-busy", "false");
       }
+    };
+  }
+
+  function waitDepsThenStart() {
+    function go() {
+      initChrome();
+      sync();
     }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", go);
+    } else go();
+  }
 
-    function bindChrome() {
-      const { owner, repo, branch } = GITHUB_REPO;
-      document.getElementById("btn-refresh").onclick = bootstrap;
-      document.getElementById("btn-root-readme").onclick = () => openPreview("README.md", "Root README");
-
-      document.getElementById("btn-open-repo").onclick = () => {
-        window.open(`https://github.com/${owner}/${repo}`, "_blank", "noopener");
-      };
-      document.getElementById("btn-open-root-blob").onclick = () => {
-        window.open(githubBlobUrl("README.md"), "_blank", "noopener");
-      };
-
-      document.getElementById("pat-input").value = localStorage.getItem(LS_TOKEN_KEY) || "";
-      document.getElementById("pat-save").onclick = () => {
-        const v = document.getElementById("pat-input").value.trim();
-        if (!v) localStorage.removeItem(LS_TOKEN_KEY);
-        else localStorage.setItem(LS_TOKEN_KEY, v);
-        bootstrap();
-      };
-      document.getElementById("pat-clear").onclick = () => {
-        localStorage.removeItem(LS_TOKEN_KEY);
-        document.getElementById("pat-input").value = "";
-        bootstrap();
-      };
-
-      document.getElementById("drawer-close").onclick = closeDrawer;
-      overlay.onclick = closeDrawer;
-
-      document.getElementById("btn-drawer-gh-file").onclick = () => {
-        if (!lastRepoPathForDrawer) return;
-        window.open(githubBlobUrl(lastRepoPathForDrawer), "_blank", "noopener");
-      };
-      document.getElementById("btn-drawer-copy").onclick = async () => {
-        if (!lastRepoPathForDrawer) return;
-        const u = githubBlobUrl(lastRepoPathForDrawer);
-        try {
-          await navigator.clipboard.writeText(u);
-          drawerMeta.textContent = `${drawerMeta.textContent.replace(/ · copied.*/, "")} · copied github link`;
-        } catch {
-          drawerMeta.textContent += " · copy blocked (HTTPS only)";
-        }
-      };
-
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") closeDrawer();
-      });
-    }
-
-    bindChrome();
-    bootstrap();
+  waitDepsThenStart();
+})();
   </script>
 </body>
 </html>
