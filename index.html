@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ap-csa-archive</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #171d26;
+      --text: #e7edf5;
+      --muted: #94a3b8;
+      --edge: #273141;
+      --q1: #3b82f6;
+      --q2: #8b5cf6;
+      --q3: #10b981;
+      --q4: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    a { color: inherit; }
+    header {
+      padding: 1.5rem clamp(1rem, 3vw, 2.5rem);
+      border-bottom: 1px solid var(--edge);
+      background: linear-gradient(180deg, #121826, var(--bg));
+    }
+    header h1 { margin: 0 0 0.35rem; font-size: 1.5rem; }
+    header p { margin: 0; color: var(--muted); max-width: 70ch; font-size: 0.95rem; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+      margin-top: 1rem;
+    }
+    .toolbar button, .toolbar a.btn {
+      appearance: none;
+      border: 1px solid var(--edge);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .toolbar button:hover, .toolbar a.btn:hover { border-color: #4b5563; }
+    #status {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+    #status.live { color: #86efac; }
+    #status.offline { color: #fde68a; }
+    main {
+      padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 4rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .grid { display: grid; gap: 1.5rem; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+    section.block {
+      background: var(--panel);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    section.block h2 {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      font-size: 1.05rem;
+      border-bottom: 1px solid var(--edge);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    section.block.q1 h2 { border-left: 4px solid var(--q1); }
+    section.block.q2 h2 { border-left: 4px solid var(--q2); }
+    section.block.q3 h2 { border-left: 4px solid var(--q3); }
+    section.block.q4 h2 { border-left: 4px solid var(--q4); }
+    section.block .subtitle { color: var(--muted); font-weight: 400; font-size: 0.875rem; margin-left: 0.25rem; }
+    ul.problems { list-style: none; margin: 0; padding: 0; }
+    li.problem {
+      padding: 0.85rem 1.1rem;
+      border-top: 1px solid var(--edge);
+    }
+    li.problem:first-of-type { border-top: none; }
+    .problem-title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .actions button, .actions a.lnk {
+      border: 1px solid var(--edge);
+      background: #1e2530;
+      color: var(--text);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .actions a.lnk:hover, .actions button:hover { border-color: #555f72; }
+    .actions .gh { color: #a5b4fc; border-color: #3730a3; }
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 40;
+    }
+    #overlay.open { display: block; }
+    .drawer-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1rem 0.75rem;
+      border-bottom: 1px solid var(--edge);
+      flex-shrink: 0;
+    }
+    #drawer {
+      position: fixed;
+      top: 0; right: 0;
+      width: min(640px, 100vw);
+      height: 100vh;
+      background: #0b0f14;
+      border-left: 1px solid var(--edge);
+      z-index: 50;
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 24px rgba(0,0,0,0.35);
+    }
+    #drawer-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    #drawer-close {
+      border: 1px solid var(--edge);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.35rem 0.65rem;
+      cursor: pointer;
+    }
+    #drawer-body {
+      flex: 1;
+      overflow: auto;
+      padding: 1rem 1.1rem 2rem;
+      font-size: 0.9375rem;
+    }
+    #drawer-body pre { background: #11161d; padding: 1rem; border-radius: 8px; overflow: auto; border: 1px solid var(--edge); }
+    #drawer-body code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; font-size: 0.84em; }
+    #drawer-body p code, #drawer-body li code { background: #11161d; padding: 0.1em 0.35em; border-radius: 4px; }
+    footer.page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem 3rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+    footer.page code { font-size: 0.92em; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AP CSA Archive</h1>
+    <p>
+      Browse <code>README.md</code> and <code>code.md</code> by FRQ-style unit (Q1–Q4).
+      The problem list stays in sync with your GitHub default branch via the GitHub API when this page is served over HTTP(S).
+      Opened as a bare <code>file://</code> page may fall back to the embedded snapshot.
+    </p>
+    <div class="toolbar">
+      <button type="button" id="btn-refresh" title="Re-fetch repo tree">Refresh from GitHub</button>
+      <a class="btn" id="lnk-root-repo" href="#" target="_blank" rel="noopener">Repository</a>
+      <a class="btn" id="lnk-root-readme" href="#" target="_blank" rel="noopener">Root README</a>
+      <span id="status"></span>
+    </div>
+  </header>
+
+  <main id="app" class="grid" aria-busy="true"></main>
+
+  <footer class="page">
+    <p>
+      Configure repo in this file’s <code>GITHUB_REPO</code> object if your fork differs.
+      For local preview run <code>npx serve .</code> (or Python <code>http.server</code>), then visit the printed URL—not <code>file://</code>—so the browser can fetch GitHub APIs and raw files.
+      Publish on <strong>GitHub Pages</strong> (deploy from <code>main</code>/<code>/ (root)</code>) and every push refreshes structure when you reload.
+    </p>
+  </footer>
+
+  <div id="overlay" aria-hidden="true"></div>
+  <aside id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <div class="drawer-head">
+      <div>
+        <div id="drawer-title"></div>
+        <div id="drawer-meta"></div>
+      </div>
+      <button type="button" id="drawer-close" aria-label="Close">Esc</button>
+    </div>
+    <article id="drawer-body"></article>
+  </aside>
+
+  <script>
+    /** Keep in sync when you rename the GitHub repo. */
+    const GITHUB_REPO = {
+      owner: "zhoulinhua0-star",
+      repo: "ap-csa-archive",
+      branch: "main",
+    };
+
+    /** Snapshot when GitHub fetch fails or rate-limits (update when you want a newer offline fallback). */
+    const INITIAL_SNAPSHOT_UNITS = [
+      {"id":"q1-methods&control-structures","problems":[{"slug":"bird-feeder","dir":"q1-methods&control-structures/bird-feeder"},{"slug":"calendar-leapyear","dir":"q1-methods&control-structures/calendar-leapyear"},{"slug":"fishNum-location","dir":"q1-methods&control-structures/fishNum-location"},{"slug":"free-block-prob","dir":"q1-methods&control-structures/free-block-prob"},{"slug":"hop-simulation","dir":"q1-methods&control-structures/hop-simulation"},{"slug":"roll-die","dir":"q1-methods&control-structures/roll-die"},{"slug":"room-reservation","dir":"q1-methods&control-structures/room-reservation"},{"slug":"score-guessing","dir":"q1-methods&control-structures/score-guessing"},{"slug":"self-divisor","dir":"q1-methods&control-structures/self-divisor"},{"slug":"walk-dog","dir":"q1-methods&control-structures/walk-dog"}]},
+      {"id":"q2-class-design","problems":[{"slug":"CalorieCount","dir":"q2-class-design/CalorieCount"},{"slug":"Scoreboard","dir":"q2-class-design/Scoreboard"},{"slug":"Sign","dir":"q2-class-design/Sign"},{"slug":"SignedText","dir":"q2-class-design/SignedText"},{"slug":"StepTracker","dir":"q2-class-design/StepTracker"},{"slug":"apline-slope","dir":"q2-class-design/apline-slope"}]},
+      {"id":"q3-array-arraylist","problems":[{"slug":"TravelPlan","dir":"q3-array-arraylist/TravelPlan"},{"slug":"WordPair","dir":"q3-array-arraylist/WordPair"},{"slug":"appointment","dir":"q3-array-arraylist/appointment"},{"slug":"average-score","dir":"q3-array-arraylist/average-score"},{"slug":"compare-customer","dir":"q3-array-arraylist/compare-customer"},{"slug":"competitor-prob","dir":"q3-array-arraylist/competitor-prob"},{"slug":"cookie-variety","dir":"q3-array-arraylist/cookie-variety"},{"slug":"cube-toss","dir":"q3-array-arraylist/cube-toss"},{"slug":"heat-wave-data","dir":"q3-array-arraylist/heat-wave-data"},{"slug":"html-delimiters","dir":"q3-array-arraylist/html-delimiters"},{"slug":"student-score","dir":"q3-array-arraylist/student-score"},{"slug":"trail-prob","dir":"q3-array-arraylist/trail-prob"},{"slug":"wordlist","dir":"q3-array-arraylist/wordlist"},{"slug":"words-of-length","dir":"q3-array-arraylist/words-of-length"}]},
+      {"id":"q4-2D-array","problems":[{"slug":"LightBoard","dir":"q4-2D-array/LightBoard"},{"slug":"SeatingChart","dir":"q4-2D-array/SeatingChart"},{"slug":"candy-flavor-box","dir":"q4-2D-array/candy-flavor-box"},{"slug":"grid-Location-prob","dir":"q4-2D-array/grid-Location-prob"},{"slug":"latin","dir":"q4-2D-array/latin"},{"slug":"puzzle","dir":"q4-2D-array/puzzle"}]}
+    ];
+
+    function applyRepoChrome() {
+      const { owner, repo, branch } = GITHUB_REPO;
+      const gh = document.getElementById("lnk-root-repo");
+      const readme = document.getElementById("lnk-root-readme");
+      gh.href = `https://github.com/${owner}/${repo}`;
+      readme.href = `https://github.com/${owner}/${repo}/blob/${branch}/README.md`;
+    }
+
+    applyRepoChrome();
+
+    const UNIT_META = new Map([
+      ["q1-methods&control-structures", { key: "q1", title: "Q1", subtitle: "Methods & control structures" }],
+      ["q2-class-design", { key: "q2", title: "Q2", subtitle: "Class design" }],
+      ["q3-array-arraylist", { key: "q3", title: "Q3", subtitle: "Array & ArrayList" }],
+      ["q4-2D-array", { key: "q4", title: "Q4", subtitle: "2D array" }],
+    ]);
+
+    const app = document.getElementById("app");
+    const statusEl = document.getElementById("status");
+    const overlay = document.getElementById("overlay");
+    const drawer = document.getElementById("drawer");
+    const drawerTitle = document.getElementById("drawer-title");
+    const drawerMeta = document.getElementById("drawer-meta");
+    const drawerBody = document.getElementById("drawer-body");
+
+    function encodeSegments(path) {
+      return path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+    }
+
+    function githubBlobUrl(repoPath) {
+      const tail = encodeSegments(repoPath);
+      const { owner, repo, branch } = GITHUB_REPO;
+      return `https://github.com/${owner}/${repo}/blob/${branch}/${tail}`;
+    }
+
+    function githubRawUrl(repoPath) {
+      const tail = encodeSegments(repoPath);
+      const { owner, repo, branch } = GITHUB_REPO;
+      return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${tail}`;
+    }
+
+    /** Build unit list from recursive git tree blobs. */
+    function treePathsToUnits(treeEntries) {
+      const wanted = /^q[1-4]-[^/]+\/.+\/(README\.md|code\.md)$/i;
+      const byUnit = new Map();
+      for (const entry of treeEntries) {
+        if (entry.type !== "blob") continue;
+        const p = entry.path;
+        if (!wanted.test(p)) continue;
+        const parts = p.split("/");
+        if (parts.length !== 3) continue;
+        const [unitId, slug, file] = parts;
+        let unitMap = byUnit.get(unitId);
+        if (!unitMap) {
+          unitMap = new Map();
+          byUnit.set(unitId, unitMap);
+        }
+        let slot = unitMap.get(slug);
+        if (!slot) {
+          slot = { slug, dir: `${unitId}/${slug}`, hasReadme: false, hasCode: false };
+          unitMap.set(slug, slot);
+        }
+        if (file.toLowerCase() === "readme.md") slot.hasReadme = true;
+        if (file.toLowerCase() === "code.md") slot.hasCode = true;
+      }
+      const order = Array.from(byUnit.keys()).sort((a, b) => a.localeCompare(b));
+      const out = [];
+      for (const uid of order) {
+        const m = byUnit.get(uid);
+        const problems = Array.from(m.values()).sort((a, b) => a.slug.localeCompare(b.slug));
+        out.push({ id: uid, problems });
+      }
+      return out;
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`${res.status} ${url} — ${t.slice(0, 200)}`);
+      }
+      return res.json();
+    }
+
+    async function loadUnitsLive() {
+      const { owner, repo, branch } = GITHUB_REPO;
+      const bUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${branch}`;
+      const br = await fetchJson(bUrl);
+      const treeSha = br.commit && br.commit.commit && br.commit.commit.tree && br.commit.commit.tree.sha;
+      if (!treeSha) throw new Error("Unexpected branch payload (no tree.sha).");
+      const tree = await fetchJson(
+        `https://api.github.com/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`
+      );
+      return treePathsToUnits(tree.tree || []);
+    }
+
+    function el(tag, props, kids) {
+      const n = document.createElement(tag);
+      if (props) Object.assign(n, props);
+      if (kids) kids.forEach((k) => n.append(k));
+      return n;
+    }
+
+    function renderUnits(units) {
+      app.innerHTML = "";
+      units.forEach((unit) => {
+        const meta = UNIT_META.get(unit.id) || { key: "", title: unit.id, subtitle: "" };
+        const sec = document.createElement("section");
+        sec.className = `block ${meta.key}`.trim();
+        sec.appendChild(el("h2", null, [
+          document.createTextNode(meta.title || unit.id),
+          el("span", { className: "subtitle", textContent: "— " + (meta.subtitle || "") }),
+        ]));
+        const ul = document.createElement("ul");
+        ul.className = "problems";
+        unit.problems.forEach((p) => {
+          const readmePath = `${p.dir}/README.md`;
+          const codePath = `${p.dir}/code.md`;
+          const li = document.createElement("li");
+          li.className = "problem";
+          li.innerHTML = "";
+          const title = el("div", { className: "problem-title", textContent: p.slug });
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          const rBtn = document.createElement("button");
+          rBtn.type = "button";
+          rBtn.textContent = "Preview README.md";
+          rBtn.onclick = () => openPreview(readmePath, "README.md");
+          const cBtn = document.createElement("button");
+          cBtn.type = "button";
+          cBtn.textContent = "Preview code.md";
+          cBtn.onclick = () => openPreview(codePath, "code.md");
+          const ghR = document.createElement("a");
+          ghR.className = "lnk gh";
+          ghR.href = githubBlobUrl(readmePath);
+          ghR.target = "_blank";
+          ghR.rel = "noopener";
+          ghR.textContent = "GitHub: README.md";
+          const ghC = document.createElement("a");
+          ghC.className = "lnk gh";
+          ghC.href = githubBlobUrl(codePath);
+          ghC.target = "_blank";
+          ghC.rel = "noopener";
+          ghC.textContent = "GitHub: code.md";
+
+          actions.append(rBtn, cBtn, ghR, ghC);
+          li.append(title, actions);
+          ul.appendChild(li);
+        });
+        sec.appendChild(ul);
+        app.appendChild(sec);
+      });
+    }
+
+    function setStatus(mode, msg) {
+      statusEl.textContent = msg;
+      statusEl.className = mode === "live" ? "live" : mode === "offline" ? "offline" : "";
+    }
+
+    async function openPreview(repoPath, label) {
+      drawerTitle.textContent = repoPath;
+      drawerMeta.textContent = `${label} · fetched from githubusercontent`;
+      drawerBody.innerHTML = "<p style=\"color:var(--muted)\">Loading…</p>";
+      overlay.classList.add("open");
+      drawer.classList.add("open");
+
+      try {
+        const url = githubRawUrl(repoPath);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${repoPath}`);
+        const text = await res.text();
+
+        let mdHtml;
+        if (typeof marked !== "undefined") {
+          if (typeof marked.parse === "function") {
+            mdHtml = marked.parse(text, { mangle: false, headerIds: false });
+          } else if (typeof marked === "function") {
+            mdHtml = marked(text);
+          } else {
+            mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
+          }
+        } else {
+          mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
+        }
+
+        /** strip outer ```markdown fence if github raw includes full doc as one block */
+        const html = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(mdHtml) : mdHtml;
+        drawerBody.innerHTML = html;
+      } catch (e) {
+        drawerMeta.textContent = `Error · ${label}`;
+        drawerBody.innerHTML =
+          `<p style="color:${getComputedStyle(document.documentElement).getPropertyValue("--danger")}">
+            Could not load <code>${repoPath}</code>:
+            ${escapeHtml(String(e.message))}.
+          </p>
+          <p><a href="${githubBlobUrl(repoPath)}">Open on GitHub →</a></p>`;
+      }
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (ch) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    function closeDrawer() {
+      overlay.classList.remove("open");
+      drawer.classList.remove("open");
+    }
+
+    document.getElementById("btn-refresh").onclick = bootstrap;
+    document.getElementById("drawer-close").onclick = closeDrawer;
+    overlay.onclick = closeDrawer;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDrawer();
+    });
+
+    /** Merge INITIAL snapshot folders with detected files if live tree empty/unavailable */
+    function mergeProblems(liveUnits, fallbackUnits) {
+      if (!liveUnits || liveUnits.length === 0) return fallbackUnits || [];
+      return liveUnits;
+    }
+
+    async function bootstrap() {
+      app.setAttribute("aria-busy", "true");
+      setStatus("", "Fetching…");
+
+      try {
+        const units = mergeProblems(await loadUnitsLive(), INITIAL_SNAPSHOT_UNITS);
+        const hasProblems = units.some((u) => u.problems && u.problems.length > 0);
+        renderUnits(hasProblems ? units : INITIAL_SNAPSHOT_UNITS);
+        setStatus("live", `Live listing from github.com (${GITHUB_REPO.branch})`);
+      } catch (e) {
+        console.warn(e);
+        renderUnits(INITIAL_SNAPSHOT_UNITS);
+        setStatus("offline", "Using embedded snapshot · " + (e && e.message ? e.message : "GitHub unreachable"));
+      } finally {
+        app.setAttribute("aria-busy", "false");
+      }
+    }
+
+    bootstrap();
+  </script>
+</body>
+</html>
