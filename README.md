@@ -1,5 +1,7 @@
 # ap-csa-archive
 
+**Browse in the browser:** [https://zhoulinhua0-star.github.io/ap-csa-archive/](https://zhoulinhua0-star.github.io/ap-csa-archive/)
+
 A personal, **concept-first** archive of **AP Computer Science A** practice in the spirit of **free-response questions (FRQs)**. Items are grouped by the **programming idea** they stress (conditionals, loops, class design, collections, 2D structures), not by exam year or source.
 
 ## What’s inside
