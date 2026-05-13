@@ -34,12 +34,12 @@
       background: linear-gradient(180deg, #121826, var(--bg));
     }
     header h1 { margin: 0 0 0.35rem; font-size: 1.5rem; }
-    header p { margin: 0; color: var(--muted); max-width: 70ch; font-size: 0.95rem; }
+    header p { margin: 0; color: var(--muted); max-width: 72ch; font-size: 0.94rem; }
     .toolbar {
-      display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+      display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center;
       margin-top: 1rem;
     }
-    .toolbar button, .toolbar a.btn {
+    button.btn, summary.btn-like {
       appearance: none;
       border: 1px solid var(--edge);
       background: var(--panel);
@@ -48,13 +48,39 @@
       border-radius: 8px;
       font-size: 0.875rem;
       cursor: pointer;
-      text-decoration: none;
+      font-family: inherit;
+      list-style: none;
     }
-    .toolbar button:hover, .toolbar a.btn:hover { border-color: #4b5563; }
+    summary.btn-like::-webkit-details-marker { display: none; }
+    details.settings { position: relative; }
+    details.settings[open] > summary { border-color: #4b5563; }
+    .settings-panel {
+      position: absolute;
+      z-index: 60;
+      top: calc(100% + 6px);
+      left: 0;
+      width: min(360px, 92vw);
+      padding: 0.85rem;
+      border-radius: 12px;
+      border: 1px solid var(--edge);
+      background: #151b24;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45);
+    }
+    .settings-panel p { margin: 0 0 0.5rem; font-size: 0.8125rem; color: var(--muted); }
+    .settings-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+    .pat-row label { font-size: 0.8125rem; color: var(--muted); display: block; margin-bottom: 0.35rem; }
+    .pat-row input[type="password"] {
+      width: 100%; padding: 0.45rem 0.5rem;
+      border-radius: 8px; border: 1px solid var(--edge); background: #0f141a; color: var(--text);
+      font-family: ui-monospace, monospace; font-size: 0.8125rem;
+    }
+    .toolbar button:hover { border-color: #4b5563; }
     #status {
       font-size: 0.8125rem;
       color: var(--muted);
       margin-left: auto;
+      text-align: right;
+      max-width: 260px;
     }
     #status.live { color: #86efac; }
     #status.offline { color: #fde68a; }
@@ -76,7 +102,7 @@
       padding: 1rem 1.1rem;
       font-size: 1.05rem;
       border-bottom: 1px solid var(--edge);
-      display: flex; align-items: center; gap: 0.5rem;
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
     }
     section.block.q1 h2 { border-left: 4px solid var(--q1); }
     section.block.q2 h2 { border-left: 4px solid var(--q2); }
@@ -89,20 +115,25 @@
       border-top: 1px solid var(--edge);
     }
     li.problem:first-of-type { border-top: none; }
-    .problem-title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem; }
+    .problem-title {
+      font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem;
+      cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
+    }
+    .problem-title:hover { color: #cbd5e1; }
+    .hint { font-size: 0.75rem; color: var(--muted); font-weight: 400; margin-left: 0.35rem; text-decoration: none; }
     .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .actions button, .actions a.lnk {
+    .actions button {
       border: 1px solid var(--edge);
       background: #1e2530;
       color: var(--text);
-      padding: 0.35rem 0.6rem;
+      padding: 0.35rem 0.65rem;
       border-radius: 6px;
       font-size: 0.8125rem;
       cursor: pointer;
-      text-decoration: none;
+      font-family: inherit;
     }
-    .actions a.lnk:hover, .actions button:hover { border-color: #555f72; }
-    .actions .gh { color: #a5b4fc; border-color: #3730a3; }
+    .actions button.primary { border-color: #334155; background: #243044; }
+    .actions button:hover { border-color: #555f72; }
     #overlay {
       display: none;
       position: fixed; inset: 0;
@@ -122,7 +153,7 @@
     #drawer {
       position: fixed;
       top: 0; right: 0;
-      width: min(640px, 100vw);
+      width: min(680px, 100vw);
       height: 100vh;
       background: #0b0f14;
       border-left: 1px solid var(--edge);
@@ -133,7 +164,23 @@
       flex-direction: column;
       box-shadow: -8px 0 24px rgba(0,0,0,0.35);
     }
+    #drawer.open { transform: translateX(0); }
+    #drawer-title { font-size: 0.94rem; font-weight: 600; word-break: break-all; }
     #drawer-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    .drawer-tools {
+      display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.55rem;
+    }
+    .drawer-tools button {
+      border: 1px solid var(--edge);
+      background: #141a22;
+      color: #cbd5e1;
+      padding: 0.3rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .drawer-tools button:hover { border-color: #555f72; }
     #drawer-close {
       border: 1px solid var(--edge);
       background: var(--panel);
@@ -141,6 +188,7 @@
       border-radius: 8px;
       padding: 0.35rem 0.65rem;
       cursor: pointer;
+      font-family: inherit;
     }
     #drawer-body {
       flex: 1;
@@ -165,14 +213,30 @@
   <header>
     <h1>AP CSA Archive</h1>
     <p>
-      Browse <code>README.md</code> and <code>code.md</code> by FRQ-style unit (Q1–Q4).
-      The problem list stays in sync with your GitHub default branch via the GitHub API when this page is served over HTTP(S).
-      Opened as a bare <code>file://</code> page may fall back to the embedded snapshot.
+      In-page previews load file text via the <strong>GitHub Contents API</strong> (CORS-friendly) with a <strong>jsDelivr</strong> fallback.
+      Nothing opens GitHub unless you choose it. Optional token in <em>Settings</em> raises API rate limits for personal use.
     </p>
     <div class="toolbar">
-      <button type="button" id="btn-refresh" title="Re-fetch repo tree">Refresh from GitHub</button>
-      <a class="btn" id="lnk-root-repo" href="#" target="_blank" rel="noopener">Repository</a>
-      <a class="btn" id="lnk-root-readme" href="#" target="_blank" rel="noopener">Root README</a>
+      <button type="button" class="btn" id="btn-refresh" title="Re-fetch repo tree">Refresh list</button>
+      <button type="button" class="btn" id="btn-root-readme" title="Preview repository README.md">Root README</button>
+      <details class="settings">
+        <summary class="btn-like">Settings</summary>
+        <div class="settings-panel">
+          <p>GitHub opens only when you click a button here or in the preview drawer.</p>
+          <div class="settings-actions">
+            <button type="button" class="btn" id="btn-open-repo">Open repo (new tab)</button>
+            <button type="button" class="btn" id="btn-open-root-blob">Root README on GitHub</button>
+          </div>
+          <div class="pat-row" style="margin-top:0.75rem">
+            <label for="pat-input">Optional GitHub token (repo read). Stored only in this browser (<code>localStorage</code>).</label>
+            <input type="password" id="pat-input" autocomplete="off" placeholder="ghp_… or fine-grained PAT" />
+          </div>
+          <div class="settings-actions">
+            <button type="button" class="btn" id="pat-save">Save token</button>
+            <button type="button" class="btn" id="pat-clear">Clear token</button>
+          </div>
+        </div>
+      </details>
       <span id="status"></span>
     </div>
   </header>
@@ -181,18 +245,21 @@
 
   <footer class="page">
     <p>
-      Configure repo in this file’s <code>GITHUB_REPO</code> object if your fork differs.
-      For local preview run <code>npx serve .</code> (or Python <code>http.server</code>), then visit the printed URL—not <code>file://</code>—so the browser can fetch GitHub APIs and raw files.
-      Publish on <strong>GitHub Pages</strong> (deploy from <code>main</code>/<code>/ (root)</code>) and every push refreshes structure when you reload.
+      Edit <code>GITHUB_REPO</code> in <code>index.html</code> for another fork. Serve over <code>http(s)</code> (GitHub Pages or <code>npx serve .</code>).
+      If listing fails, the embedded snapshot still shows cards; previews then use the API/CDN paths for <code>main</code>.
     </p>
   </footer>
 
   <div id="overlay" aria-hidden="true"></div>
   <aside id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
     <div class="drawer-head">
-      <div>
+      <div style="flex:1;min-width:0;">
         <div id="drawer-title"></div>
         <div id="drawer-meta"></div>
+        <div class="drawer-tools">
+          <button type="button" id="btn-drawer-gh-file">GitHub · this file</button>
+          <button type="button" id="btn-drawer-copy">Copy github.com link</button>
+        </div>
       </div>
       <button type="button" id="drawer-close" aria-label="Close">Esc</button>
     </div>
@@ -200,30 +267,20 @@
   </aside>
 
   <script>
-    /** Keep in sync when you rename the GitHub repo. */
     const GITHUB_REPO = {
       owner: "zhoulinhua0-star",
       repo: "ap-csa-archive",
       branch: "main",
     };
 
-    /** Snapshot when GitHub fetch fails or rate-limits (update when you want a newer offline fallback). */
+    const LS_TOKEN_KEY = "ap_csa_archive_github_token";
+
     const INITIAL_SNAPSHOT_UNITS = [
       {"id":"q1-methods&control-structures","problems":[{"slug":"bird-feeder","dir":"q1-methods&control-structures/bird-feeder"},{"slug":"calendar-leapyear","dir":"q1-methods&control-structures/calendar-leapyear"},{"slug":"fishNum-location","dir":"q1-methods&control-structures/fishNum-location"},{"slug":"free-block-prob","dir":"q1-methods&control-structures/free-block-prob"},{"slug":"hop-simulation","dir":"q1-methods&control-structures/hop-simulation"},{"slug":"roll-die","dir":"q1-methods&control-structures/roll-die"},{"slug":"room-reservation","dir":"q1-methods&control-structures/room-reservation"},{"slug":"score-guessing","dir":"q1-methods&control-structures/score-guessing"},{"slug":"self-divisor","dir":"q1-methods&control-structures/self-divisor"},{"slug":"walk-dog","dir":"q1-methods&control-structures/walk-dog"}]},
       {"id":"q2-class-design","problems":[{"slug":"CalorieCount","dir":"q2-class-design/CalorieCount"},{"slug":"Scoreboard","dir":"q2-class-design/Scoreboard"},{"slug":"Sign","dir":"q2-class-design/Sign"},{"slug":"SignedText","dir":"q2-class-design/SignedText"},{"slug":"StepTracker","dir":"q2-class-design/StepTracker"},{"slug":"apline-slope","dir":"q2-class-design/apline-slope"}]},
       {"id":"q3-array-arraylist","problems":[{"slug":"TravelPlan","dir":"q3-array-arraylist/TravelPlan"},{"slug":"WordPair","dir":"q3-array-arraylist/WordPair"},{"slug":"appointment","dir":"q3-array-arraylist/appointment"},{"slug":"average-score","dir":"q3-array-arraylist/average-score"},{"slug":"compare-customer","dir":"q3-array-arraylist/compare-customer"},{"slug":"competitor-prob","dir":"q3-array-arraylist/competitor-prob"},{"slug":"cookie-variety","dir":"q3-array-arraylist/cookie-variety"},{"slug":"cube-toss","dir":"q3-array-arraylist/cube-toss"},{"slug":"heat-wave-data","dir":"q3-array-arraylist/heat-wave-data"},{"slug":"html-delimiters","dir":"q3-array-arraylist/html-delimiters"},{"slug":"student-score","dir":"q3-array-arraylist/student-score"},{"slug":"trail-prob","dir":"q3-array-arraylist/trail-prob"},{"slug":"wordlist","dir":"q3-array-arraylist/wordlist"},{"slug":"words-of-length","dir":"q3-array-arraylist/words-of-length"}]},
       {"id":"q4-2D-array","problems":[{"slug":"LightBoard","dir":"q4-2D-array/LightBoard"},{"slug":"SeatingChart","dir":"q4-2D-array/SeatingChart"},{"slug":"candy-flavor-box","dir":"q4-2D-array/candy-flavor-box"},{"slug":"grid-Location-prob","dir":"q4-2D-array/grid-Location-prob"},{"slug":"latin","dir":"q4-2D-array/latin"},{"slug":"puzzle","dir":"q4-2D-array/puzzle"}]}
     ];
-
-    function applyRepoChrome() {
-      const { owner, repo, branch } = GITHUB_REPO;
-      const gh = document.getElementById("lnk-root-repo");
-      const readme = document.getElementById("lnk-root-readme");
-      gh.href = `https://github.com/${owner}/${repo}`;
-      readme.href = `https://github.com/${owner}/${repo}/blob/${branch}/README.md`;
-    }
-
-    applyRepoChrome();
 
     const UNIT_META = new Map([
       ["q1-methods&control-structures", { key: "q1", title: "Q1", subtitle: "Methods & control structures" }],
@@ -240,6 +297,9 @@
     const drawerMeta = document.getElementById("drawer-meta");
     const drawerBody = document.getElementById("drawer-body");
 
+    /** Last opened blob path for drawer actions */
+    let lastRepoPathForDrawer = "";
+
     function encodeSegments(path) {
       return path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
     }
@@ -250,10 +310,67 @@
       return `https://github.com/${owner}/${repo}/blob/${branch}/${tail}`;
     }
 
-    function githubRawUrl(repoPath) {
-      const tail = encodeSegments(repoPath);
+    function apiHeaders/mediaType(mediaType = "application/vnd.github+json") {
+      const headers = {
+        Accept: mediaType,
+        "X-GitHub-Api-Version": "2022-11-28",
+      };
+      const token = (localStorage.getItem(LS_TOKEN_KEY) || "").trim();
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return headers;
+    }
+
+    function decodeBase64Utf8(b64) {
+      const clean = b64.replace(/\s/g, "");
+      const bin = atob(clean);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+
+    async function fetchViaJsDelivr(repoPath) {
       const { owner, repo, branch } = GITHUB_REPO;
-      return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${tail}`;
+      const tail = encodeSegments(repoPath);
+      const url = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${encodeURIComponent(branch)}/${tail}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`jsDelivr HTTP ${res.status}`);
+      return await res.text();
+    }
+
+    /** Load file bytes as UTF-8 text: GitHub API (raw/json) → jsDelivr. Avoids raw.githubusercontent.com CORS. */
+    async function fetchRepoFileText(repoPath) {
+      const { owner, repo, branch } = GITHUB_REPO;
+      const encodedPath = encodeSegments(repoPath);
+      const url =
+        `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}` +
+        `?ref=${encodeURIComponent(branch)}`;
+
+      let apiErr = "";
+      try {
+        const rawRes = await fetch(url, { headers: apiHeaders("application/vnd.github.raw") });
+        if (rawRes.ok) return await rawRes.text();
+        apiErr = `${rawRes.status} ${(await rawRes.text()).slice(0, 180)}`;
+
+        const jsonRes = await fetch(url, { headers: apiHeaders("application/vnd.github+json") });
+        if (jsonRes.ok) {
+          const data = await jsonRes.json();
+          if (Array.isArray(data)) throw new Error("Path is a directory");
+          if (data.type === "file" && data.encoding === "base64" && data.content) {
+            return decodeBase64Utf8(data.content);
+          }
+          throw new Error("Unexpected Contents API payload");
+        }
+        apiErr = `${jsonRes.status} ${(await jsonRes.text()).slice(0, 180)}`;
+      } catch (e) {
+        if (e.message && String(e.message).includes("Unexpected")) throw e;
+        apiErr = String(e.message || e || apiErr);
+      }
+
+      try {
+        return await fetchViaJsDelivr(repoPath);
+      } catch (_) {
+        throw new Error(`Could not fetch ${repoPath}. API: ${apiErr}`);
+      }
     }
 
     /** Build unit list from recursive git tree blobs. */
@@ -291,10 +408,14 @@
     }
 
     async function fetchJson(url) {
-      const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+      const res = await fetch(url, { headers: apiHeaders("application/vnd.github+json") });
       if (!res.ok) {
         const t = await res.text();
-        throw new Error(`${res.status} ${url} — ${t.slice(0, 200)}`);
+        throw new Error(`${res.status} ${url} — ${t.slice(0, 240)}`);
+      }
+      const remaining = res.headers.get("x-ratelimit-remaining");
+      if (remaining !== null && Number(remaining) < 15) {
+        console.warn(`GitHub API rate-limit remaining: ${remaining}`);
       }
       return res.json();
     }
@@ -303,7 +424,8 @@
       const { owner, repo, branch } = GITHUB_REPO;
       const bUrl = `https://api.github.com/repos/${owner}/${repo}/branches/${branch}`;
       const br = await fetchJson(bUrl);
-      const treeSha = br.commit && br.commit.commit && br.commit.commit.tree && br.commit.commit.tree.sha;
+      const treeSha =
+        br.commit && br.commit.commit && br.commit.commit.tree && br.commit.commit.tree.sha;
       if (!treeSha) throw new Error("Unexpected branch payload (no tree.sha).");
       const tree = await fetchJson(
         `https://api.github.com/repos/${owner}/${repo}/git/trees/${treeSha}?recursive=1`
@@ -316,6 +438,54 @@
       if (props) Object.assign(n, props);
       if (kids) kids.forEach((k) => n.append(k));
       return n;
+    }
+
+    function renderMarkdown(text) {
+      let mdHtml;
+      if (typeof marked !== "undefined") {
+        if (typeof marked.parse === "function") {
+          mdHtml = marked.parse(text, { mangle: false, headerIds: false });
+        } else if (typeof marked === "function") {
+          mdHtml = marked(text);
+        } else mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
+      } else mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
+      return typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(mdHtml) : mdHtml;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (ch) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    async function openPreview(repoPath, label) {
+      lastRepoPathForDrawer = repoPath;
+      drawerTitle.textContent = repoPath;
+      drawerMeta.textContent = `${label} · loading via GitHub API / CDN…`;
+      drawerBody.innerHTML = "<p style=\"color:var(--muted)\">Loading…</p>";
+      overlay.classList.add("open");
+      drawer.classList.add("open");
+
+      try {
+        const text = await fetchRepoFileText(repoPath);
+        drawerMeta.textContent = `${label} · rendered locally`;
+        drawerBody.innerHTML = renderMarkdown(text);
+      } catch (e) {
+        drawerMeta.textContent = `Error · ${label}`;
+        const danger = getComputedStyle(document.documentElement).getPropertyValue("--danger").trim()
+          || "#ef4444";
+        drawerBody.innerHTML =
+          `<p style="color:${danger}">
+            Could not load <code>${escapeHtml(repoPath)}</code>:
+            ${escapeHtml(String(e.message))}.
+           </p>
+           <div class="drawer-tools">
+             <button type="button" id="retry-preview">Retry</button>
+           </div>
+           <p style="margin-top:0.75rem;font-size:0.8125rem;color:var(--muted)">
+             If this is a private repo, add a read token under <strong>Settings</strong>.
+           </p>`;
+        drawerBody.querySelector("#retry-preview").onclick = () => openPreview(repoPath, label);
+      }
     }
 
     function renderUnits(units) {
@@ -335,32 +505,23 @@
           const codePath = `${p.dir}/code.md`;
           const li = document.createElement("li");
           li.className = "problem";
-          li.innerHTML = "";
-          const title = el("div", { className: "problem-title", textContent: p.slug });
+          const title = el("div", { className: "problem-title" });
+          title.appendChild(document.createTextNode(p.slug));
+          title.appendChild(el("span", { className: "hint", textContent: "(click → README)" }));
+          title.title = "Preview README.md";
+          title.onclick = () => openPreview(readmePath, "README.md");
           const actions = document.createElement("div");
           actions.className = "actions";
           const rBtn = document.createElement("button");
           rBtn.type = "button";
-          rBtn.textContent = "Preview README.md";
+          rBtn.className = "primary";
+          rBtn.textContent = "README";
           rBtn.onclick = () => openPreview(readmePath, "README.md");
           const cBtn = document.createElement("button");
           cBtn.type = "button";
-          cBtn.textContent = "Preview code.md";
+          cBtn.textContent = "Code";
           cBtn.onclick = () => openPreview(codePath, "code.md");
-          const ghR = document.createElement("a");
-          ghR.className = "lnk gh";
-          ghR.href = githubBlobUrl(readmePath);
-          ghR.target = "_blank";
-          ghR.rel = "noopener";
-          ghR.textContent = "GitHub: README.md";
-          const ghC = document.createElement("a");
-          ghC.className = "lnk gh";
-          ghC.href = githubBlobUrl(codePath);
-          ghC.target = "_blank";
-          ghC.rel = "noopener";
-          ghC.textContent = "GitHub: code.md";
-
-          actions.append(rBtn, cBtn, ghR, ghC);
+          actions.append(rBtn, cBtn);
           li.append(title, actions);
           ul.appendChild(li);
         });
@@ -374,64 +535,11 @@
       statusEl.className = mode === "live" ? "live" : mode === "offline" ? "offline" : "";
     }
 
-    async function openPreview(repoPath, label) {
-      drawerTitle.textContent = repoPath;
-      drawerMeta.textContent = `${label} · fetched from githubusercontent`;
-      drawerBody.innerHTML = "<p style=\"color:var(--muted)\">Loading…</p>";
-      overlay.classList.add("open");
-      drawer.classList.add("open");
-
-      try {
-        const url = githubRawUrl(repoPath);
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${repoPath}`);
-        const text = await res.text();
-
-        let mdHtml;
-        if (typeof marked !== "undefined") {
-          if (typeof marked.parse === "function") {
-            mdHtml = marked.parse(text, { mangle: false, headerIds: false });
-          } else if (typeof marked === "function") {
-            mdHtml = marked(text);
-          } else {
-            mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
-          }
-        } else {
-          mdHtml = "<pre>" + escapeHtml(text) + "</pre>";
-        }
-
-        /** strip outer ```markdown fence if github raw includes full doc as one block */
-        const html = typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(mdHtml) : mdHtml;
-        drawerBody.innerHTML = html;
-      } catch (e) {
-        drawerMeta.textContent = `Error · ${label}`;
-        drawerBody.innerHTML =
-          `<p style="color:${getComputedStyle(document.documentElement).getPropertyValue("--danger")}">
-            Could not load <code>${repoPath}</code>:
-            ${escapeHtml(String(e.message))}.
-          </p>
-          <p><a href="${githubBlobUrl(repoPath)}">Open on GitHub →</a></p>`;
-      }
-    }
-
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, (ch) =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch]));
-    }
-
     function closeDrawer() {
       overlay.classList.remove("open");
       drawer.classList.remove("open");
     }
 
-    document.getElementById("btn-refresh").onclick = bootstrap;
-    document.getElementById("drawer-close").onclick = closeDrawer;
-    overlay.onclick = closeDrawer;
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeDrawer();
-    });
-
-    /** Merge INITIAL snapshot folders with detected files if live tree empty/unavailable */
     function mergeProblems(liveUnits, fallbackUnits) {
       if (!liveUnits || liveUnits.length === 0) return fallbackUnits || [];
       return liveUnits;
@@ -445,16 +553,65 @@
         const units = mergeProblems(await loadUnitsLive(), INITIAL_SNAPSHOT_UNITS);
         const hasProblems = units.some((u) => u.problems && u.problems.length > 0);
         renderUnits(hasProblems ? units : INITIAL_SNAPSHOT_UNITS);
-        setStatus("live", `Live listing from github.com (${GITHUB_REPO.branch})`);
+        setStatus("live", `Listing · ${GITHUB_REPO.owner}/${GITHUB_REPO.repo} (${GITHUB_REPO.branch})`);
       } catch (e) {
         console.warn(e);
         renderUnits(INITIAL_SNAPSHOT_UNITS);
-        setStatus("offline", "Using embedded snapshot · " + (e && e.message ? e.message : "GitHub unreachable"));
+        setStatus("offline", "Snapshot listing · GitHub tree: " + (e && e.message ? e.message : "unreachable"));
       } finally {
         app.setAttribute("aria-busy", "false");
       }
     }
 
+    function bindChrome() {
+      const { owner, repo, branch } = GITHUB_REPO;
+      document.getElementById("btn-refresh").onclick = bootstrap;
+      document.getElementById("btn-root-readme").onclick = () => openPreview("README.md", "Root README");
+
+      document.getElementById("btn-open-repo").onclick = () => {
+        window.open(`https://github.com/${owner}/${repo}`, "_blank", "noopener");
+      };
+      document.getElementById("btn-open-root-blob").onclick = () => {
+        window.open(githubBlobUrl("README.md"), "_blank", "noopener");
+      };
+
+      document.getElementById("pat-input").value = localStorage.getItem(LS_TOKEN_KEY) || "";
+      document.getElementById("pat-save").onclick = () => {
+        const v = document.getElementById("pat-input").value.trim();
+        if (!v) localStorage.removeItem(LS_TOKEN_KEY);
+        else localStorage.setItem(LS_TOKEN_KEY, v);
+        bootstrap();
+      };
+      document.getElementById("pat-clear").onclick = () => {
+        localStorage.removeItem(LS_TOKEN_KEY);
+        document.getElementById("pat-input").value = "";
+        bootstrap();
+      };
+
+      document.getElementById("drawer-close").onclick = closeDrawer;
+      overlay.onclick = closeDrawer;
+
+      document.getElementById("btn-drawer-gh-file").onclick = () => {
+        if (!lastRepoPathForDrawer) return;
+        window.open(githubBlobUrl(lastRepoPathForDrawer), "_blank", "noopener");
+      };
+      document.getElementById("btn-drawer-copy").onclick = async () => {
+        if (!lastRepoPathForDrawer) return;
+        const u = githubBlobUrl(lastRepoPathForDrawer);
+        try {
+          await navigator.clipboard.writeText(u);
+          drawerMeta.textContent = `${drawerMeta.textContent.replace(/ · copied.*/, "")} · copied github link`;
+        } catch {
+          drawerMeta.textContent += " · copy blocked (HTTPS only)";
+        }
+      };
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeDrawer();
+      });
+    }
+
+    bindChrome();
     bootstrap();
   </script>
 </body>
